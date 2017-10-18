@@ -13,19 +13,27 @@ import android.widget.Toast;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import okhttp3.Callback;
+import okhttp3.Call;
+import okhttp3.Response;
+
+import java.io.IOException;
+import java.util.ArrayList;
 
 public class RestaurantsActivity extends AppCompatActivity {
+    public static final String TAG = RestaurantsActivity.class.getSimpleName();
 
     @Bind(R.id.locationTextView) TextView mLocationTextView;
     @Bind(R.id.listView) ListView mListView;
 
-    private String[] restaurants = new String[] {"Mi Mero Mole", "Mother's Bistro",
-            "Life of Pie", "Screen Door", "Luc Lac", "Sweet Basil",
-            "Slappy Cakes", "Equinox", "Miss Delta's", "Andina",
-            "Lardo", "Portland City Grill", "Fat Head's Brewery",
-            "Chipotle", "Subway"};
+    public ArrayList<Restaurant> restaurants = new ArrayList<>();
 
-    public static final String TAG = RestaurantsActivity.class.getSimpleName();
+//    private String[] restaurants = new String[]{"Mi Mero Mole", "Mother's Bistro",
+//            "Life of Pie", "Screen Door", "Luc Lac", "Sweet Basil",
+//            "Slappy Cakes", "Equinox", "Miss Delta's", "Andina",
+//            "Lardo", "Portland City Grill", "Fat Head's Brewery",
+//            "Chipotle", "Subway"};
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,7 +49,7 @@ public class RestaurantsActivity extends AppCompatActivity {
 
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                String restaurant = ((TextView)view).getText().toString();
+                String restaurant = ((TextView) view).getText().toString();
                 Toast.makeText(RestaurantsActivity.this, restaurant, Toast.LENGTH_LONG).show();
 
             }
@@ -51,5 +59,36 @@ public class RestaurantsActivity extends AppCompatActivity {
         String location = intent.getStringExtra("location");
         mLocationTextView.setText("Here are all the locations near: " + location);
 
+        getRestaurants(location);
     }
+
+    private void getRestaurants(String location) {
+        final YelpService yelpService = new YelpService();
+        yelpService.findRestaurants(location, new Callback() {
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                try {
+                    String jsonData = response.body().string();
+                    if (response.isSuccessful()) {
+                        Log.v(TAG, jsonData);
+                        restaurants = yelpService.processResults(response);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
+
+    }
+
+
 }
+
+
